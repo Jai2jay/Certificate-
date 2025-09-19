@@ -1,0 +1,98 @@
+import pandas as pd
+from sklearn.preprocessing import LabelEncoder
+from sklearn.model_selection import train_test_split, cross_val_score
+from sklearn.ensemble import HistGradientBoostingClassifier
+from sklearn.metrics import accuracy_score
+import seaborn as sns
+import matplotlib.pyplot as plt
+import numpy as np
+
+# Load CSV
+df = pd.read_csv(r"C:\Users\C030\Documents\musica.csv")
+
+print(df.head())
+
+# Encode categorical features
+le_sex = LabelEncoder()
+df['Sex_encoded'] = le_sex.fit_transform(df['Sex'])
+
+le_genre = LabelEncoder()
+df['Genre_encoded'] = le_genre.fit_transform(df['Favorite_Genre'])
+
+le_character = LabelEncoder()
+df['Character_encoded'] = le_character.fit_transform(df['Character_Type'])
+
+# FEATURE ENGINEERING
+# 1. Age bins (categorical)
+df['Age_group'] = pd.cut(df['Age'], bins=[0,18,25,35,100], labels=[0,1,2,3])
+df['Age_group'] = df['Age_group'].astype(int)
+
+# 2. Interaction feature: Age * Hours_Per_Day
+df['Age_Hours_interaction'] = df['Age'] * df['Hours_Per_Day']
+
+# Features and target
+X = df[['Age_group', 'Sex_encoded', 'Hours_Per_Day', 'Character_encoded', 'Age_Hours_interaction']]
+y = df['Genre_encoded']
+
+# Use HistGradientBoostingClassifier (fast and effective)
+model = HistGradientBoostingClassifier(random_state=42)
+
+# Cross-validation score for a better performance estimate
+cv_scores = cross_val_score(model, X, y, cv=5, scoring='accuracy')
+print(f"Cross-validation accuracy scores: {cv_scores}")
+print(f"Mean CV accuracy: {cv_scores.mean():.4f}")
+
+# Train-test split
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+model.fit(X_train, y_train)
+y_pred = model.predict(X_test)
+
+print("Test set accuracy:", accuracy_score(y_test, y_pred))
+
+# Plotting favorite genre by gender
+plt.figure(figsize=(10,6))
+sns.countplot(data=df, x='Favorite_Genre', hue='Sex', palette='Set2')
+plt.title('Favorite Music Genre by Gender')
+plt.xlabel('Music Genre')
+plt.ylabel('Count')
+plt.legend(title='Gender')
+plt.show()
+
+# Prediction function update
+def predict_genre(age, sex, hours, character):
+    sex_encoded = le_sex.transform([sex])[0]
+    character_encoded = le_character.transform([character])[0]
+    
+    # Age group
+    if age <= 18:
+        age_group = 0
+    elif age <= 25:
+        age_group = 1
+    elif age <= 35:
+        age_group = 2
+    else:
+        age_group = 3
+
+    age_hours_interaction = age * hours
+
+    X_new = pd.DataFrame({
+        'Age_group': [age_group],
+        'Sex_encoded': [sex_encoded],
+        'Hours_Per_Day': [hours],
+        'Character_encoded': [character_encoded],
+        'Age_Hours_interaction': [age_hours_interaction]
+    })
+
+    pred_encoded = model.predict(X_new)[0]
+    pred_genre = le_genre.inverse_transform([pred_encoded])[0]
+    return pred_genre
+
+# User input
+age = int(input("Enter student's age: "))
+gender = input("Enter student's gender (M/F): ")
+hours = float(input("Enter hours spent listening to music per day: "))
+character = input("Enter student's character (e.g., introvert/extrovert): ")
+
+predicted_genre = predict_genre(age, gender, hours, character)
+print(f"Predicted favorite genre: {predicted_genre}")
