@@ -1,0 +1,59 @@
+import pandas as pd
+from sklearn.preprocessing import LabelEncoder
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import accuracy_score
+import seaborn as sns
+import matplotlib.pyplot as plt
+
+# Load CSV (remove extra quotes in path)
+df = pd.read_csv(r"C:\Users\C030\Documents\musica.csv")
+
+print(df.head())  # Check your data loaded correctly
+
+# Encode categorical features
+le_sex = LabelEncoder()
+df['Sex_encoded'] = le_sex.fit_transform(df['Sex'])  # M=1, F=0 for example
+
+le_genre = LabelEncoder()
+df['Genre_encoded'] = le_genre.fit_transform(df['Favorite_Genre'])
+
+# Features and target
+X = df[['Age', 'Sex_encoded', 'Hours_Per_Day']]
+y = df['Genre_encoded']
+
+# Split data into train and test sets
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+# Train the model
+model = RandomForestClassifier(n_estimators=100, random_state=42)
+model.fit(X_train, y_train)
+
+# Evaluate accuracy
+y_pred = model.predict(X_test)
+print("Accuracy:", accuracy_score(y_test, y_pred))
+
+# Prediction function
+def predict_genre(age, sex, hours):
+    sex_encoded = le_sex.transform([sex])[0]
+    X_new = pd.DataFrame({'Age': [age], 'Sex_encoded': [sex_encoded], 'Hours_Per_Day': [hours]})
+    pred_encoded = model.predict(X_new)[0]
+    pred_genre = le_genre.inverse_transform([pred_encoded])[0]
+    return pred_genre
+
+# Input from user
+age = int(input("Enter student's age: "))
+gender = input("Enter student's gender (M/F): ")
+hours = float(input("Enter hours spent listening to music per day: "))
+
+predicted_genre = predict_genre(age, gender, hours)
+print(f"Predicted favorite genre: {predicted_genre}")
+
+# Plot: Favorite Genre by Gender
+plt.figure(figsize=(10,6))
+sns.countplot(data=df, x='Favorite_Genre', hue='Sex', palette='Set2')
+plt.title('Favorite Music Genre by Gender')
+plt.xlabel('Music Genre')
+plt.ylabel('Count')
+plt.legend(title='Gender')
+plt.show()
