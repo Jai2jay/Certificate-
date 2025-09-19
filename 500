@@ -29,6 +29,15 @@ X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_
 model = RandomForestClassifier(n_estimators=100, random_state=42)
 model.fit(X_train, y_train)
 
+# Plot: Favorite Genre by Gender
+plt.figure(figsize=(10,6))
+sns.countplot(data=df, x='Favorite_Genre', hue='Sex', palette='Set2')
+plt.title('Favorite Music Genre by Gender')
+plt.xlabel('Music Genre')
+plt.ylabel('Count')
+plt.legend(title='Gender')
+plt.show()
+
 # Evaluate accuracy
 y_pred = model.predict(X_test)
 print("Accuracy:", accuracy_score(y_test, y_pred))
@@ -45,15 +54,8 @@ def predict_genre(age, sex, hours):
 age = int(input("Enter student's age: "))
 gender = input("Enter student's gender (M/F): ")
 hours = float(input("Enter hours spent listening to music per day: "))
+character = input("Enter student's character (e.g., introvert/extrovert): ")
 
 predicted_genre = predict_genre(age, gender, hours)
 print(f"Predicted favorite genre: {predicted_genre}")
 
-# Plot: Favorite Genre by Gender
-plt.figure(figsize=(10,6))
-sns.countplot(data=df, x='Favorite_Genre', hue='Sex', palette='Set2')
-plt.title('Favorite Music Genre by Gender')
-plt.xlabel('Music Genre')
-plt.ylabel('Count')
-plt.legend(title='Gender')
-plt.show()
